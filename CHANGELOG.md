@@ -7,3 +7,21 @@ and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Added
+
+- Ingest new entities
+  - `freshservice_account`
+  - `freshservice_agent`
+  - `freshservice_agent_group`
+  - `freshservice_agent_role`
+  - `freshservice_ticket`
+- Build new relationships
+  - `freshservice_account_has_agent`
+  - `freshservice_account_has_agent_group`
+  - `freshservice_account_has_agent_role`
+  - `freshservice_account_has_ticket`
+  - `freshservice_agent_group_has_agent`
+  - `freshservice_agent_group_has_ticket`
+  - `freshservice_agent_has_ticket`
+  - `freshservice_agent_role_assigned_agent`
