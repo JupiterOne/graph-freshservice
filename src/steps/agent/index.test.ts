@@ -1,4 +1,5 @@
 import { executeStepWithDependencies } from '@jupiterone/integration-sdk-testing';
+
 import { buildStepTestConfigForStep } from '../../../test/config';
 import { Recording, setupProjectRecording } from '../../../test/recording';
 import { Steps } from '../constants';
@@ -9,35 +10,39 @@ afterEach(async () => {
   await recording.stop();
 });
 
-test('fetch-users', async () => {
+test('fetch-agents', async () => {
   recording = setupProjectRecording({
     directory: __dirname,
-    name: 'fetch-users',
+    name: 'fetch-agents',
   });
 
-  const stepConfig = buildStepTestConfigForStep(Steps.USERS);
+  const stepConfig = buildStepTestConfigForStep(Steps.AGENT);
   const stepResult = await executeStepWithDependencies(stepConfig);
   expect(stepResult).toMatchStepMetadata(stepConfig);
 });
 
-test('fetch-groups', async () => {
+test('build-agent-and-ticket-relationships', async () => {
   recording = setupProjectRecording({
     directory: __dirname,
-    name: 'fetch-groups',
+    name: 'build-agent-and-ticket-relationships',
   });
 
-  const stepConfig = buildStepTestConfigForStep(Steps.GROUPS);
+  const stepConfig = buildStepTestConfigForStep(
+    Steps.BUILD_AGENT_TICKET_RELATIONSHIPS,
+  );
   const stepResult = await executeStepWithDependencies(stepConfig);
   expect(stepResult).toMatchStepMetadata(stepConfig);
 });
 
-test('build-user-group-relationships', async () => {
+test('build-agent-group-and-ticket-relationships', async () => {
   recording = setupProjectRecording({
     directory: __dirname,
-    name: 'build-user-group-relationships',
+    name: 'build-agent-group-and-ticket-relationships',
   });
 
-  const stepConfig = buildStepTestConfigForStep(Steps.GROUP_USER_RELATIONSHIPS);
+  const stepConfig = buildStepTestConfigForStep(
+    Steps.BUILD_AGENT_GROUP_TICKET_RELATIONSHIPS,
+  );
   const stepResult = await executeStepWithDependencies(stepConfig);
   expect(stepResult).toMatchStepMetadata(stepConfig);
 });

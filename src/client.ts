@@ -1,121 +1,152 @@
-import http from 'http';
-
-import { IntegrationProviderAuthenticationError } from '@jupiterone/integration-sdk-core';
+import fetch, { Response } from 'node-fetch';
+import {
+  IntegrationProviderAPIError,
+  IntegrationProviderAuthenticationError,
+} from '@jupiterone/integration-sdk-core';
 
 import { IntegrationConfig } from './config';
-import { AcmeUser, AcmeGroup } from './types';
+import {
+  FreshserviceAgent,
+  FreshserviceAgentGroup,
+  FreshserviceAgentRole,
+  FreshserviceTicket,
+} from './types';
 
 export type ResourceIteratee<T> = (each: T) => Promise<void> | void;
 
-/**
- * An APIClient maintains authentication state and provides an interface to
- * third party data APIs.
- *
- * It is recommended that integrations wrap provider data APIs to provide a
- * place to handle error responses and implement common patterns for iterating
- * resources.
- */
 export class APIClient {
   constructor(readonly config: IntegrationConfig) {}
+  private baseUri = `https://${this.config.hostName}.freshservice.com/api/v2/`;
+  private withBaseUri = (path: string) => `${this.baseUri}${path}`;
+  private perPage = 100;
+  private retryAfter = 0;
 
-  public async verifyAuthentication(): Promise<void> {
-    // TODO make the most light-weight request possible to validate
-    // authentication works with the provided credentials, throw an err if
-    // authentication fails
-    const request = new Promise<void>((resolve, reject) => {
-      http.get(
-        {
-          hostname: 'localhost',
-          port: 443,
-          path: '/api/v1/some/endpoint?limit=1',
-          agent: false,
-          timeout: 10,
-        },
-        (res) => {
-          if (res.statusCode !== 200) {
-            reject(new Error('Provider authentication failed'));
-          } else {
-            resolve();
-          }
-        },
-      );
-    });
+  private checkStatus = (response: Response) => {
+    if (response.ok) {
+      this.retryAfter = 0;
+      return response;
+    } else if (response.status === 429) {
+      const retryAfter: string = response.headers.get('retry-after');
+      if (retryAfter) {
+        this.retryAfter = parseInt(retryAfter, 10);
+      }
+    } else {
+      throw new IntegrationProviderAPIError(response);
+    }
+  };
 
+  private async getRequest(endpoint: string, method: 'GET'): Promise<Response> {
+    const auth =
+      'Basic ' + Buffer.from(this.config.apiKey + ':').toString('base64');
     try {
-      await request;
+      const options = {
+        method,
+        headers: {
+          Authorization: auth,
+        },
+      };
+
+      const response: Response = await fetch(endpoint, options);
+      this.checkStatus(response);
+
+      if (this.retryAfter > 0) {
+        await new Promise((r) => setTimeout(r, (this.retryAfter + 3) * 1000));
+        const response: Response = await fetch(endpoint, options);
+        return response.json();
+      }
+
+      return response.json();
+    } catch (err) {
+      throw new IntegrationProviderAPIError({
+        endpoint: endpoint,
+        status: err.status,
+        statusText: err.statusText,
+      });
+    }
+  }
+  public async verifyAuthentication(): Promise<void> {
+    const uri = this.withBaseUri(`roles`);
+    try {
+      await this.getRequest(uri, 'GET');
     } catch (err) {
       throw new IntegrationProviderAuthenticationError({
         cause: err,
-        endpoint: 'https://localhost/api/v1/some/endpoint?limit=1',
+        endpoint: uri,
         status: err.status,
         statusText: err.statusText,
       });
     }
   }
 
-  /**
-   * Iterates each user resource in the provider.
-   *
-   * @param iteratee receives each resource to produce entities/relationships
-   */
-  public async iterateUsers(
-    iteratee: ResourceIteratee<AcmeUser>,
+  private async paginatedGeneralRequest<T>(
+    uri: string,
+    method: 'GET',
+    accessor: string,
+    iteratee: ResourceIteratee<T>,
   ): Promise<void> {
-    // TODO paginate an endpoint, invoke the iteratee with each record in the
-    // page
-    //
-    // The provider API will hopefully support pagination. Functions like this
-    // should maintain pagination state, and for each page, for each record in
-    // the page, invoke the `ResourceIteratee`. This will encourage a pattern
-    // where each resource is processed and dropped from memory.
+    let numElements = 0;
+    let currPage = 1;
 
-    const users: AcmeUser[] = [
-      {
-        id: 'acme-user-1',
-        name: 'User One',
-      },
-      {
-        id: 'acme-user-2',
-        name: 'User Two',
-      },
-    ];
+    do {
+      const response = await this.getRequest(
+        `${uri}?per_page=${this.perPage}&page=${currPage}`,
+        method,
+      );
 
-    for (const user of users) {
-      await iteratee(user);
-    }
+      for (const item of response[accessor]) {
+        await iteratee(item);
+      }
+      currPage += 1;
+      numElements = response[accessor].length;
+
+      if (numElements < this.perPage) {
+        break;
+      }
+    } while (numElements == this.perPage);
   }
 
-  /**
-   * Iterates each group resource in the provider.
-   *
-   * @param iteratee receives each resource to produce entities/relationships
-   */
-  public async iterateGroups(
-    iteratee: ResourceIteratee<AcmeGroup>,
+  public async iterateAgents(
+    iteratee: ResourceIteratee<FreshserviceAgent>,
   ): Promise<void> {
-    // TODO paginate an endpoint, invoke the iteratee with each record in the
-    // page
-    //
-    // The provider API will hopefully support pagination. Functions like this
-    // should maintain pagination state, and for each page, for each record in
-    // the page, invoke the `ResourceIteratee`. This will encourage a pattern
-    // where each resource is processed and dropped from memory.
+    await this.paginatedGeneralRequest<FreshserviceAgent>(
+      this.withBaseUri('agents'),
+      'GET',
+      'agents',
+      iteratee,
+    );
+  }
 
-    const groups: AcmeGroup[] = [
-      {
-        id: 'acme-group-1',
-        name: 'Group One',
-        users: [
-          {
-            id: 'acme-user-1',
-          },
-        ],
-      },
-    ];
+  public async iterateAgentGroups(
+    iteratee: ResourceIteratee<FreshserviceAgentGroup>,
+  ): Promise<void> {
+    await this.paginatedGeneralRequest<FreshserviceAgentGroup>(
+      this.withBaseUri('groups'),
+      'GET',
+      'groups',
+      iteratee,
+    );
+  }
 
-    for (const group of groups) {
-      await iteratee(group);
-    }
+  public async iterateAgentRoles(
+    iteratee: ResourceIteratee<FreshserviceAgentRole>,
+  ): Promise<void> {
+    await this.paginatedGeneralRequest<FreshserviceAgentRole>(
+      this.withBaseUri('roles'),
+      'GET',
+      'roles',
+      iteratee,
+    );
+  }
+
+  public async iterateTickets(
+    iteratee: ResourceIteratee<FreshserviceTicket>,
+  ): Promise<void> {
+    await this.paginatedGeneralRequest<FreshserviceTicket>(
+      this.withBaseUri('tickets'),
+      'GET',
+      'tickets',
+      iteratee,
+    );
   }
 }
 

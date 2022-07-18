@@ -21,7 +21,7 @@ describe('#validateInvocation', () => {
     });
 
     await expect(validateInvocation(executionContext)).rejects.toThrow(
-      'Config requires all of {clientId, clientSecret}',
+      'Config requires all of {hostName, apiKey}',
     );
   });
 
@@ -67,8 +67,8 @@ describe('#validateInvocation', () => {
 
         const executionContext = createMockExecutionContext({
           instanceConfig: {
-            clientId: 'INVALID',
-            clientSecret: integrationConfig.clientSecret,
+            hostName: 'INVALID',
+            apiKey: 'INVALID',
           },
         });
 
@@ -90,8 +90,8 @@ describe('#validateInvocation', () => {
 
         const executionContext = createMockExecutionContext({
           instanceConfig: {
-            clientId: integrationConfig.clientSecret,
-            clientSecret: 'INVALID',
+            hostName: 'INVALID',
+            apiKey: 'INVALID',
           },
         });
 
