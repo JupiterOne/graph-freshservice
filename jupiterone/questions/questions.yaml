@@ -11,5 +11,5 @@ questions:
        query: |
          FIND freshservice_agent_role WITH displayName ~= ("Admin" OR "Change" OR "Problem" OR "Agent" OR "Release" OR "Super")
   tags:
-     - fresh-service
-     - agent-role  
+    - fresh-service
+    - agent-role  
