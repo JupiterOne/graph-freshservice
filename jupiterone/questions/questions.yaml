@@ -6,7 +6,7 @@ questions:
   title: What are the FreshService role based access controls?
   description: Returns a list of FreshService agent roles consisting of Account Admin, Admin, CMDB Admin, Agent, Supervisor, Change, Problem, and Release Managers.
   queries:
-    - name: FreshService Agent Roles
+    - name: FreshService Role Based Access Control
     - resultsAre: INFORMATIVE
       query: |
         FIND freshservice_agent_role WITH displayName ~= ("Admin" OR "Change" OR "Problem" OR "Agent" OR "Release" OR "Super")
