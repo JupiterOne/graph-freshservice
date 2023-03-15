@@ -9,8 +9,8 @@
 
 ## How it Works
 
-- JupiterOne periodically fetches account, agents, agent groups, agent roles and
-  tickets from Freshservice to update the graph.
+- JupiterOne periodically fetches account, agents, agent groups, agent roles,
+  and tickets from Freshservice to update the graph.
 - Write JupiterOne queries to review and monitor updates to the graph, or
   leverage existing queries.
 - Configure alerts to take action when JupiterOne graph changes, or leverage
