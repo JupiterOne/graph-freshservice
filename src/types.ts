@@ -124,4 +124,5 @@ export type FreshserviceTicket = {
   type: string;
   description: string;
   description_text: string;
+  workspace_id: string;
 };

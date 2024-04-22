@@ -97,9 +97,9 @@ The following relationships are created:
 | `freshservice_account`     | **HAS**               | `freshservice_agent_group` |
 | `freshservice_account`     | **HAS**               | `freshservice_agent_role`  |
 | `freshservice_account`     | **HAS**               | `freshservice_ticket`      |
+| `freshservice_agent`       | **HAS**               | `freshservice_ticket`      |
 | `freshservice_agent_group` | **HAS**               | `freshservice_agent`       |
 | `freshservice_agent_group` | **HAS**               | `freshservice_ticket`      |
-| `freshservice_agent`       | **HAS**               | `freshservice_ticket`      |
 | `freshservice_agent_role`  | **ASSIGNED**          | `freshservice_agent`       |
 
 <!--

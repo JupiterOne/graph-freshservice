@@ -21,17 +21,21 @@ export class APIClient {
   private perPage = 100;
   private retryAfter = 0;
 
-  private checkStatus = (response: Response) => {
+  private checkStatus = (response: Response, endpoint: string) => {
     if (response.ok) {
       this.retryAfter = 0;
       return response;
     } else if (response.status === 429) {
-      const retryAfter: string = response.headers.get('retry-after');
+      const retryAfter: string | null = response.headers.get('retry-after');
       if (retryAfter) {
         this.retryAfter = parseInt(retryAfter, 10);
       }
     } else {
-      throw new IntegrationProviderAPIError(response);
+      throw new IntegrationProviderAPIError({
+        endpoint: endpoint,
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
   };
 
@@ -47,7 +51,7 @@ export class APIClient {
       };
 
       const response: Response = await fetch(endpoint, options);
-      this.checkStatus(response);
+      this.checkStatus(response, endpoint);
 
       if (this.retryAfter > 0) {
         await new Promise((r) => setTimeout(r, (this.retryAfter + 3) * 1000));
