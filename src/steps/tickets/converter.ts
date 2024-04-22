@@ -7,8 +7,11 @@ import {
 import { FreshserviceTicket } from '../../types';
 import { Entities } from '../constants';
 
-export function getTicketKey(id: string, workspace_id: string): string {
-  return `freshservice_ticket:${id}:${workspace_id}`;
+export function getTicketKey(
+  id: string,
+  workspace_id: string | undefined,
+): string {
+  return `freshservice_ticket:${id}:${workspace_id ?? '0'}`;
 }
 
 export function createTicketEntity(ticket: FreshserviceTicket): Entity {
@@ -20,7 +23,7 @@ export function createTicketEntity(ticket: FreshserviceTicket): Entity {
         _class: Entities.TICKET._class,
         _key: getTicketKey(
           ticket.id.toString(),
-          ticket.workspace_id.toString(),
+          ticket.workspace_id?.toString(),
         ),
         name: ticket.id.toString(),
         displayName: ticket.id.toString(),
